@@ -1,0 +1,108 @@
+// Chat Types
+export interface ChatMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: Date;
+  feedback?: 'positive' | 'negative';
+  tokens?: number;
+}
+
+export interface ChatSession {
+  id: string;
+  messages: ChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
+  title?: string;
+}
+
+// API Types
+export interface ChatRequest {
+  message: string;
+  sessionId?: string;
+  context?: string;
+}
+
+export interface ChatResponse {
+  message: string;
+  sessionId: string;
+  tokens: number;
+  model: string;
+}
+
+export interface FeedbackRequest {
+  messageId: string;
+  feedback: 'positive' | 'negative';
+  comment?: string;
+}
+
+// Analytics Types
+export interface AnalyticsEvent {
+  event: string;
+  properties: Record<string, any>;
+  timestamp: Date;
+  sessionId: string;
+}
+
+// Component Props Types
+export interface ButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  loading?: boolean;
+  className?: string;
+}
+
+export interface InputProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  multiline?: boolean;
+  rows?: number;
+  className?: string;
+  onKeyPress?: (e: React.KeyboardEvent) => void;
+}
+
+// Error Types
+export interface APIError {
+  message: string;
+  code: number;
+  details?: any;
+}
+
+// Configuration Types
+export interface AppConfig {
+  apiUrl: string;
+  openaiModel: string;
+  maxTokens: number;
+  temperature: number;
+  enableAnalytics: boolean;
+  gaId?: string;
+}
+
+// Movie/Cinema specific types for future use
+export interface Movie {
+  id: string;
+  title: string;
+  year: number;
+  director: string;
+  genre: string[];
+  rating: number;
+  poster?: string;
+  synopsis?: string;
+}
+
+export interface CinemaContext {
+  genres: string[];
+  directors: string[];
+  actors: string[];
+  years: number[];
+  userPreferences?: {
+    favoriteGenres: string[];
+    dislikedGenres: string[];
+    favoriteDirectors: string[];
+  };
+}

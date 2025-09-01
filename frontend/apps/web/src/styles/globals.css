@@ -1,0 +1,139 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Cinema Theme CSS Variables */
+:root {
+  --primary-red: #dc2626;      /* Vermelho cinema */
+  --deep-black: #0f0f0f;       /* Preto profundo */
+  --gold-accent: #fbbf24;      /* Dourado Oscar */
+  --pastel-gray: #f3f4f6;      /* Cinza suave */
+  --dark-gray: #1f2937;        /* Cinza escuro */
+  --burgundy: #7f1d1d;         /* Borgonha */
+  --crimson: #dc143c;          /* Crimson */
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+    'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #000000 0%, #1f2937 50%, #7f1d1d 100%);
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dc2626;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b91c1c;
+}
+
+/* Cinema Glow Effects */
+.cinema-glow {
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
+}
+
+.cinema-text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Button Animations */
+.btn-cinema {
+  @apply px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg;
+  @apply transition-all duration-200 transform;
+  @apply hover:from-red-700 hover:to-red-800 hover:scale-105;
+  @apply active:scale-95;
+  @apply shadow-lg hover:shadow-xl;
+}
+
+.btn-cinema-outline {
+  @apply px-6 py-3 bg-transparent border-2 border-red-600 text-red-600 font-semibold rounded-lg;
+  @apply transition-all duration-200 transform;
+  @apply hover:bg-red-600 hover:text-white hover:scale-105;
+  @apply active:scale-95;
+}
+
+/* Chat Specific Styles */
+.chat-message {
+  @apply p-4 rounded-lg max-w-md;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.chat-message.user {
+  @apply bg-red-600 text-white ml-auto;
+}
+
+.chat-message.ai {
+  @apply bg-gray-800 text-gray-100 mr-auto border border-red-800/30;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.typing-indicator {
+  animation: pulse 1.5s infinite;
+}
+
+/* Loading States */
+.loading-dots {
+  display: inline-block;
+}
+
+.loading-dots::after {
+  content: '';
+  animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: ''; }
+  40% { content: '.'; }
+  60% { content: '..'; }
+  80%, 100% { content: '...'; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cinema-mobile-padding {
+    @apply px-4;
+  }
+}

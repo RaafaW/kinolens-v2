@@ -6,5 +6,6 @@ export const limiter = rateLimit({
   max: env.RATE_LIMIT_MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { ok: false, error: "Too many requests. Try again later." }
+  message: { ok: false, error: "Too many requests. Try again later." },
+  skip: (req) => req.method === "OPTIONS" || req.path === "/health",
 });

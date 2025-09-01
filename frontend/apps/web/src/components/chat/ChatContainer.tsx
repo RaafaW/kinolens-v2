@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, ThumbsUp, ThumbsDown, Loader2 } from 'lucide-react';
+import { sendChat, sendFeedback as sendFeedbackApi, type HistoryItem, type Role } from "../../services/api";
 
 interface Message {
   id: string;
@@ -9,20 +10,12 @@ interface Message {
   feedback?: 'up' | 'down';
 }
 
-interface ChatResponse {
-  message: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}
-
 export const ChatContainer: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Olá! 🎬 Eu sou o KinoLens, seu assistente especializado em cinema. Posso ajudar você com recomendações de filmes, análises cinematográficas, discussões sobre diretores, curiosidades do cinema e muito mais. Como posso ajudá-lo hoje?',
+      text:
+        'Olá! 🎬 Eu sou o KinoLens, seu assistente especializado em cinema. Posso ajudar você com recomendações de filmes, análises cinematográficas, discussões sobre diretores, curiosidades do cinema e muito mais. Como posso ajudá-lo hoje?',
       sender: 'assistant',
       timestamp: new Date(),
     },
@@ -37,7 +30,7 @@ export const ChatContainer: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -49,64 +42,57 @@ export const ChatContainer: React.FC = () => {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // AJUSTE: correção de spread [...prev, ...] e inclusão imediata da msg do usuário
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: inputValue,
-          conversationHistory: messages.map(m => ({
-            role: m.sender === 'user' ? 'user' : 'assistant',
-            content: m.text
-          }))
-        }),
+      const history: HistoryItem[] = [...messages, userMessage].map((m) => ({
+        role: (m.sender === 'user' ? 'user' : 'assistant') as Role,
+        content: m.text,
+      }));
+
+      const data = await sendChat({
+        message: userMessage.text,
+        history,
+        language: 'pt',
       });
-
-      if (!response.ok) {
-        throw new Error('Falha na comunicação com o servidor');
-      }
-
-      const data: ChatResponse = await response.json();
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: data.message,
+        // AJUSTE: backend retorna "reply" (antes esperava "message")
+        text: data.reply,
         sender: 'assistant',
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      // AJUSTE: correção de spread
+      setMessages((prev) => [...prev, assistantMessage]);
 
-      // Log de tokens para debug
       if (data.usage) {
         console.log('📊 Token Usage:', {
           input: data.usage.prompt_tokens,
           output: data.usage.completion_tokens,
-          total: data.usage.total_tokens
+          total: data.usage.total_tokens,
         });
       }
-
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
+      const errMsg = (error as Error)?.message || 'Erro inesperado'
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'Desculpe, ocorreu um erro. Tente novamente em alguns instantes.',
+        text: `Desculpe, ocorreu um erro: ${errMsg}`,
         sender: 'assistant',
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  // AJUSTE: usar onKeyDown (onKeyPress é legacy) e enviar com Enter sem Shift
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -114,23 +100,16 @@ export const ChatContainer: React.FC = () => {
   };
 
   const handleFeedback = async (messageId: string, feedback: 'up' | 'down') => {
-    setMessages(prev =>
-      prev.map(msg =>
-        msg.id === messageId ? { ...msg, feedback } : msg
-      )
+    // AJUSTE: correção de spread do objeto { ...msg, feedback }
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === messageId ? { ...msg, feedback } : msg)),
     );
 
     try {
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/feedback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messageId,
-          feedback,
-          message: messages.find(m => m.id === messageId)?.text
-        }),
+      await sendFeedbackApi({
+        messageId,
+        feedback,
+        message: messages.find((m) => m.id === messageId)?.text || '',
       });
     } catch (error) {
       console.error('Erro ao enviar feedback:', error);
@@ -147,7 +126,9 @@ export const ChatContainer: React.FC = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">KinoLens</h1>
-            <p className="text-cinema-gray/80 text-sm">Seu assistente especializado em cinema</p>
+            <p className="text-cinema-gray/80 text-sm">
+              Seu assistente especializado em cinema
+            </p>
           </div>
         </div>
       </div>
@@ -167,7 +148,7 @@ export const ChatContainer: React.FC = () => {
                   <Bot className="w-5 h-5 text-white" />
                 </div>
               )}
-              
+
               <div
                 className={`max-w-xl px-4 py-3 rounded-2xl ${
                   message.sender === 'user'
@@ -180,22 +161,28 @@ export const ChatContainer: React.FC = () => {
                   <span className="text-xs opacity-60">
                     {message.timestamp.toLocaleTimeString()}
                   </span>
-                  
+
                   {message.sender === 'assistant' && (
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleFeedback(message.id, 'up')}
                         className={`p-1 rounded hover:bg-white/10 transition-colors ${
-                          message.feedback === 'up' ? 'text-green-400' : 'text-white/60'
+                          message.feedback === 'up'
+                            ? 'text-green-400'
+                            : 'text-white/60'
                         }`}
+                        title="Útil"
                       >
                         <ThumbsUp className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleFeedback(message.id, 'down')}
                         className={`p-1 rounded hover:bg-white/10 transition-colors ${
-                          message.feedback === 'down' ? 'text-red-400' : 'text-white/60'
+                          message.feedback === 'down'
+                            ? 'text-red-400'
+                            : 'text-white/60'
                         }`}
+                        title="Não ajudou"
                       >
                         <ThumbsDown className="w-4 h-4" />
                       </button>
@@ -211,7 +198,7 @@ export const ChatContainer: React.FC = () => {
               )}
             </div>
           ))}
-          
+
           {isLoading && (
             <div className="flex items-start gap-3 justify-start">
               <div className="w-8 h-8 bg-cinema-red rounded-full flex items-center justify-center flex-shrink-0">
@@ -220,12 +207,12 @@ export const ChatContainer: React.FC = () => {
               <div className="bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-3 rounded-2xl">
                 <div className="flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Pensando...</span>
+                  <span>Pensando…</span>
                 </div>
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -237,8 +224,8 @@ export const ChatContainer: React.FC = () => {
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Pergunte sobre filmes, diretores, recomendações..."
+              onKeyDown={handleKeyDown} // AJUSTE: onKeyDown
+              placeholder="Pergunte sobre filmes, diretores, recomendações."
               className="flex-1 bg-transparent text-white placeholder-white/60 resize-none outline-none min-h-[20px] max-h-32"
               rows={1}
               disabled={isLoading}
@@ -247,6 +234,7 @@ export const ChatContainer: React.FC = () => {
               onClick={sendMessage}
               disabled={!inputValue.trim() || isLoading}
               className="w-10 h-10 bg-cinema-red rounded-full flex items-center justify-center hover:bg-cinema-red/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Enviar"
             >
               <Send className="w-5 h-5 text-white" />
             </button>

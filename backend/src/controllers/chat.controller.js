@@ -1,5 +1,6 @@
 import { chatBodySchema } from "../schemas/chat.schema.js";
 import { chatCompletion } from "../services/chat.service.js";
+import { enforceCinemaScope } from "../services/guardrails.js";
 
 export async function postChat(req, res, next) {
   try {
@@ -14,6 +15,11 @@ export async function postChat(req, res, next) {
 
     const { message, history, language } = parsed.data;
     const { text, usage } = await chatCompletion({ message, history, language });
+
+    const scope = await enforceCinemaScope(message);
+    if (!scope.ok) {
+      return res.json({ ok: true, reply: scope.message, usage: null });
+    }
 
     res.json({ ok: true, reply: text, usage });
   } catch (err) {

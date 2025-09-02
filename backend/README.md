@@ -1,12 +1,12 @@
 # KinoLens – Backend (Node + Express)
 
-API para o chatbot de cinema do KinoLens. Fornece um endpoint para conversar com a IA (OpenAI **gpt-4o**), healthcheck, rate‑limit, CORS e logs.
+API para o chatbot de cinema do KinoLens. Usa OpenAI (**gpt-4o**) e aplica *guardrails* para responder **somente** sobre cinema.
 
 ## Stack
 - Node 18+ / Express 4
 - OpenAI SDK
 - Zod (validação)
-- Helmet, CORS, Rate Limit, Morgan (logs)
+- Helmet, CORS, Rate Limit, Morgan
 - Dotenv
 
 ## Requisitos
@@ -15,7 +15,7 @@ API para o chatbot de cinema do KinoLens. Fornece um endpoint para conversar com
 
 ## Instalação e execução
 ```bash
-# dentro da pasta backend/
+# dentro de backend/
 npm i
 npm run dev       # desenvolvimento (nodemon)
 # ou
@@ -30,46 +30,38 @@ npm start         # produção
 | `NODE_ENV` | ❌ | `development` | Ambiente |
 | `RATE_LIMIT_WINDOW_MS` | ❌ | `900000` | Janela do rate limit (ms) |
 | `RATE_LIMIT_MAX_REQUESTS` | ❌ | `100` | Máximo de reqs por IP na janela |
-| `CORS_ORIGIN` | ❌ | `http://localhost:5173` | Origem permitida no CORS |
+| `CORS_ORIGIN` | ❌ | `http://localhost:5173` | Origens permitidas (CSV) |
+| `OPENAI_MODEL` | ❌ | `gpt-4o` | Modelo principal |
+| `OPENAI_EMBED_MODEL` | ❌ | `text-embedding-3-small` | Modelo de embeddings |
+| `EMBED_THRESHOLD` | ❌ | `0.78` | Threshold de similaridade (0–1) |
+| `ENABLE_LLM_GUARD` | ❌ | `false` | Liga classificador LLM p/ casos ambíguos |
+| `OPENAI_MODEL_GUARD` | ❌ | `gpt-4o-mini` | Modelo do classificador LLM |
 
 Exemplo:
 ```env
 OPENAI_API_KEY=sk-...
 PORT=5000
 NODE_ENV=development
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-CORS_ORIGIN=http://localhost:5173
+CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
+OPENAI_MODEL=gpt-4o
+OPENAI_EMBED_MODEL=text-embedding-3-small
+EMBED_THRESHOLD=0.78
+ENABLE_LLM_GUARD=false
 ```
 
-## Estrutura de pastas
+## Estrutura
 ```
 backend/
-  package.json
-  .env
   src/
-    server.js
     app.js
-    config/
-      env.js
-      openai.js
-    routes/
-      index.js
-      chat.routes.js
-      feedback.routes.js
-    controllers/
-      chat.controller.js
-    services/
-      chat.service.js
-      prompt.js
-    middlewares/
-      rateLimit.js
-      errorHandler.js
-      notFound.js
-    schemas/
-      chat.schema.js
-    utils/
-      logger.js
+    server.js
+    config/ (env, openai)
+    routes/ (index, chat.routes, feedback.routes)
+    controllers/ (chat.controller)
+    services/ (chat.service, guardrails, prompt)
+    middlewares/ (rateLimit, errorHandler, notFound)
+    schemas/ (chat.schema)
+    utils/ (logger)
 ```
 
 ## Endpoints
@@ -78,83 +70,50 @@ backend/
 - **200** → `{ "ok": true, "status": "healthy" }`
 
 ### `POST /api/chat`
-- **Body**
+**Body**
 ```json
 {
   "message": "filme do cara que revive o mesmo dia",
-  "history": [
-    { "role": "user", "content": "gosto de sci-fi" },
-    { "role": "assistant", "content": "sugestões..." }
-  ],
+  "history": [{ "role": "user", "content": "gosto de sci-fi" }],
   "language": "pt"
 }
 ```
-- **200** → 
+**200** →
 ```json
 {
   "ok": true,
-  "reply": "• Feitiço do Tempo (1993)...",
-  "usage": {
-    "prompt_tokens": 123,
-    "completion_tokens": 45,
-    "total_tokens": 168
-  }
+  "reply": "- **Feitiço do Tempo (1993)** — comédia — ...",
+  "usage": { "prompt_tokens": 123, "completion_tokens": 45, "total_tokens": 168 }
 }
 ```
-- **400** → `{ "ok": false, "error": "message: message é obrigatório" }`  
-- **429** → `{ "ok": false, "error": "Too many requests. Try again later." }`  
-- **500** → `{ "ok": false, "error": "Internal Server Error" }`
 
-### `POST /api/feedback`  *(stub)*
-- **Body**: `{ "messageId": "123", "feedback": "up" | "down", "message": "texto original" }`
-- **204** sem corpo (apenas loga no server).
+> A resposta vem **em Markdown** (bullets, negrito etc.).
 
-## Prompt do sistema
-Arquivo: `src/services/prompt.js`.  
-Ajuste o tom, idioma padrão e regras do KinoLens aqui.
+### `POST /api/feedback` *(stub)*
+Body:
+```json
+{ "messageId": "123", "feedback": "up", "message": "texto original" }
+```
+**204** sem corpo (apenas loga no servidor).
 
-## Testes via terminal
+## Guardrails (cinema-only)
 
-**Healthcheck**
+1. **Strong Allow** – libera pedidos explícitos sobre filmes (ex.: “indique filmes sobre X”, “qual é o filme que...”).
+2. **Embeddings** – checa a similaridade do texto com um *centro* de tópicos de cinema (`text-embedding-3-small` + `EMBED_THRESHOLD`).
+3. **LLM Guard (opcional)** – classificador rígido para casos ambíguos/jailbreak (`ENABLE_LLM_GUARD=true`).
+
+- Perguntas fora de escopo retornam **recusa curta** e **não gastam tokens** do modelo principal.
+- Pedidos como “**filmes sobre criptomoedas**” passam pelo *Strong Allow* e são respondidos normalmente.
+
+### Testes
 ```bash
-curl -s http://localhost:5000/health
+# Fora de escopo → recusa (sem usage)
+curl -s -X POST http://localhost:5000/api/chat   -H "Content-Type: application/json"   -d '{"message":"o que é bitcoin?"}'
+
+# Pedido explícito sobre filmes → responde
+curl -s -X POST http://localhost:5000/api/chat   -H "Content-Type: application/json"   -d '{"message":"indique 2 filmes sobre criptomoedas ou fraude financeira"}'
 ```
 
-**Chat – exemplo 1 (descrição de cena)**
-```bash
-curl -s -X POST http://localhost:5000/api/chat   -H "Content-Type: application/json"   -d '{"message":"homem revive o mesmo dia num festival da marmota"}'
-```
-
-**Chat – exemplo 2 (recomendações)**
-```bash
-curl -s -X POST http://localhost:5000/api/chat   -H "Content-Type: application/json"   -d '{"message":"recomende 3 filmes noir modernos"}'
-```
-
-> Sem `jq`? Use `| python -m json.tool` para pretty print (se tiver Python).
-
-## Integração com o frontend
-- Configure `VITE_API_URL=http://localhost:5000` no front.
-- Envie `POST /api/chat` com `{ message, history?, language? }`.
-- Leia `reply` no retorno.
-
-## Segurança e operações
-- **Helmet** ativado.
-- **CORS** restrito por `CORS_ORIGIN`.
-- **Rate Limit** por IP (configurável via `.env`).
-- **Logs HTTP** com Morgan (preset `dev` em dev, `combined` em prod).
-- **Erros** centralizados (`errorHandler`) com resposta JSON consistente.
-
-## Design Patterns
-- **Camadas**: Routes → Controller → Service.  
-- **Factory** para cliente OpenAI (`config/openai.js`).  
-- **Prompt Builder** simples (`services/prompt.js`).  
-- **Middlewares** para cross‑cutting (rate‑limit, CORS, segurança, logs, erros).  
-- **Schema Validation (Guard)** com Zod.  
-- **Fail‑fast** + erros padronizados.
-
-## Roadmap
-- Streaming de respostas (SSE).
-- Persistência de chat/feedback (DB).
-- Autenticação e quotas por usuário.
-- Observabilidade (request id, tracing, métricas).
-- Tests (unit e e2e) e CI.
+## Produção
+- Remova `*` do `CORS_ORIGIN`. Use domínios explícitos ou sirva a API via `/api` no mesmo host do frontend (evita CORS).
+- Habilite HSTS no Helmet e reduza rate limit se necessário.

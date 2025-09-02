@@ -10,5 +10,5 @@ export const historyItemSchema = z.object({
 export const chatBodySchema = z.object({
   message: z.string().min(1, "message é obrigatório"),
   history: z.array(historyItemSchema).optional(),
-  language: z.enum(["pt", "en"]).optional() // default pt
+  language: z.enum(["pt", "en"]).optional()
 });

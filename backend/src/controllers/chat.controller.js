@@ -14,14 +14,14 @@ export async function postChat(req, res, next) {
     }
 
     const { message, history, language } = parsed.data;
-    const { text, usage } = await chatCompletion({ message, history, language });
 
     const scope = await enforceCinemaScope(message);
     if (!scope.ok) {
-      return res.json({ ok: true, reply: scope.message, usage: null });
+      return res.status(200).json({ ok: true, reply: scope.message, usage: null });
     }
 
-    res.json({ ok: true, reply: text, usage });
+    const { text, usage } = await chatCompletion({ message, history, language });
+    return res.status(200).json({ ok: true, reply: text, usage });
   } catch (err) {
     next(err);
   }

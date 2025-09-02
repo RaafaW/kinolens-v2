@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, ThumbsUp, ThumbsDown, Loader2 } from 'lucide-react';
 import { sendChat, sendFeedback as sendFeedbackApi, type HistoryItem, type Role } from "../../services/api";
+import ReactMarkdown from 'react-markdown';
+import gfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -156,7 +158,21 @@ export const ChatContainer: React.FC = () => {
                     : 'bg-white/10 backdrop-blur-sm text-white border border-white/20'
                 }`}
               >
-                <p className="whitespace-pre-wrap">{message.text}</p>
+                <ReactMarkdown
+                  remarkPlugins={[gfm]}
+                  components={{
+                    p: ({children}) => <p className="mb-2 leading-relaxed">{children}</p>,
+                    ul: ({children}) => <ul className="list-disc pl-5 space-y-1">{children}</ul>,
+                    ol: ({children}) => <ol className="list-decimal pl-5 space-y-1">{children}</ol>,
+                    li: ({children}) => <li className="ml-1">{children}</li>,
+                    strong: ({children}) => <strong className="font-semibold">{children}</strong>,
+                    em: ({children}) => <em className="italic">{children}</em>,
+                    code: ({children}) => <code className="px-1 py-0.5 rounded bg-black/30">{children}</code>,
+                    a: ({href, children}) => <a href={href} target="_blank" rel="noreferrer" className="underline">{children}</a>,
+                  }}
+                >
+                  {message.text}
+                </ReactMarkdown>
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-xs opacity-60">
                     {message.timestamp.toLocaleTimeString()}

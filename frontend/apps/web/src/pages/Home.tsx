@@ -1,5 +1,3 @@
-// src/pages/Home.tsx
-import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Film, MessageCircle, Sparkles, ArrowDown } from "lucide-react";
 import { ChatContainer } from "../components/chat/ChatContainer";

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Film, MessageCircle, Sparkles, ArrowDown } from "lucide-react";
 import { ChatContainer } from "../components/chat/ChatContainer";
+import { useState } from "react";
 
 export default function Home() {
   const [showChat, setShowChat] = useState(false);

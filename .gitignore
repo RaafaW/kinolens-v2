@@ -163,3 +163,7 @@ Icon
 *.backup
 *.bak
 *.tmp
+
+# Ignorar arquivos de configuração gerados pelo Vite
+frontend/apps/web/vite.config.d.ts
+frontend/apps/web/vite.config.js

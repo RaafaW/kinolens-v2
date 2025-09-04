@@ -4,7 +4,10 @@ API para o chatbot de cinema do KinoLens. Usa OpenAI (**gpt-4o**) e aplica *guar
 
 ## Stack
 - Node 18+ / Express 4
+- PostgreSQL (banco de dados)
 - OpenAI SDK
+- pg (Node.js driver for PostgreSQL)
+- bcryptjs (Password hashing)
 - Zod (validação)
 - Helmet, CORS, Rate Limit, Morgan
 - Dotenv
@@ -12,6 +15,7 @@ API para o chatbot de cinema do KinoLens. Usa OpenAI (**gpt-4o**) e aplica *guar
 ## Requisitos
 - **Node 18+**
 - **OPENAI_API_KEY** válido no `.env` (em `backend/`)
+- **DATABASE_URL** válida no `.env` para um banco PostgreSQL
 
 ## Instalação e execução
 ```bash
@@ -25,6 +29,7 @@ npm start         # produção
 ## Variáveis de ambiente (.env)
 | Chave | Obrigatória | Default | Descrição |
 |---|---|---:|---|
+| `DATABASE_URL` | ✅ | — | URL de conexão do PostgreSQL |
 | `OPENAI_API_KEY` | ✅ | — | Chave da OpenAI |
 | `PORT` | ❌ | `5000` | Porta do servidor |
 | `NODE_ENV` | ❌ | `development` | Ambiente |
@@ -39,14 +44,18 @@ npm start         # produção
 
 Exemplo:
 ```env
-OPENAI_API_KEY=sk-...
+# Server
 PORT=5000
 NODE_ENV=development
-CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
-OPENAI_MODEL=gpt-4o
-OPENAI_EMBED_MODEL=text-embedding-3-small
-EMBED_THRESHOLD=0.78
-ENABLE_LLM_GUARD=false
+
+# Database
+DATABASE_URL="postgres://user:password@host:port/database"
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+CORS_ORIGIN=http://localhost:5173,[http://127.0.0.1:5173](http://127.0.0.1:5173)
+
+# ... (outras chaves)
 ```
 
 ## Estrutura
@@ -55,9 +64,9 @@ backend/
   src/
     app.js
     server.js
-    config/ (env, openai)
-    routes/ (index, chat.routes, feedback.routes)
-    controllers/ (chat.controller)
+    config/ (env, openai, db)
+    routes/ (index, chat.routes, feedback.routes, user.routes)
+    controllers/ (chat.controller, user.controller)
     services/ (chat.service, guardrails, prompt)
     middlewares/ (rateLimit, errorHandler, notFound)
     schemas/ (chat.schema)
@@ -69,6 +78,35 @@ backend/
 ### `GET /health`
 - **200** → `{ "ok": true, "status": "healthy" }`
 
+### `POST /api/users/register`
+**Body**
+```json
+{
+  "email": "usuario@exemplo.com",
+  "password": "senhaComPeloMenos6Caracteres"
+}
+```
+
+**Respostas**
+- 201 Created → O usuário foi criado com sucesso.
+```json
+{
+  "message": "Usuário criado com sucesso!",
+  "user": {
+    "id": "uuid-do-usuario",
+    "email": "usuario@exemplo.com"
+  }
+}
+```
+- 400 Bad Request → Dados inválidos (e.g., e-mail faltando, senha com menos de 6 caracteres).
+```json
+{ "message": "E-mail e uma senha com no mínimo 6 caracteres são obrigatórios." }
+```
+- 409 Conflict → O e-mail informado já existe no banco de dados.
+```json
+{ "message": "Este e-mail já está em uso." }
+```
+
 ### `POST /api/chat`
 **Body**
 ```json
@@ -78,7 +116,8 @@ backend/
   "language": "pt"
 }
 ```
-**200** →
+
+**200**
 ```json
 {
   "ok": true,

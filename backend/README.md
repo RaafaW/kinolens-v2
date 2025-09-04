@@ -8,6 +8,7 @@ API para o chatbot de cinema do KinoLens. Usa OpenAI (**gpt-4o**) e aplica *guar
 - OpenAI SDK
 - pg (Node.js driver for PostgreSQL)
 - bcryptjs (Password hashing)
+- jsonwebtoken (JWT for authentication)
 - Zod (validação)
 - Helmet, CORS, Rate Limit, Morgan
 - Dotenv
@@ -16,6 +17,7 @@ API para o chatbot de cinema do KinoLens. Usa OpenAI (**gpt-4o**) e aplica *guar
 - **Node 18+**
 - **OPENAI_API_KEY** válido no `.env` (em `backend/`)
 - **DATABASE_URL** válida no `.env` para um banco PostgreSQL
+- **JWT_SECRET** para assinar os tokens de autenticação
 
 ## Instalação e execução
 ```bash
@@ -30,6 +32,7 @@ npm start         # produção
 | Chave | Obrigatória | Default | Descrição |
 |---|---|---:|---|
 | `DATABASE_URL` | ✅ | — | URL de conexão do PostgreSQL |
+| `JWT_SECRET` | ✅ | — | Segredo para assinar os JSON Web Tokens |
 | `OPENAI_API_KEY` | ✅ | — | Chave da OpenAI |
 | `PORT` | ❌ | `5000` | Porta do servidor |
 | `NODE_ENV` | ❌ | `development` | Ambiente |
@@ -51,9 +54,12 @@ NODE_ENV=development
 # Database
 DATABASE_URL="postgres://user:password@host:port/database"
 
+# Security
+JWT_SECRET="seu_segredo_super_longo_e_aleatorio_aqui"
+
 # OpenAI
 OPENAI_API_KEY=sk-...
-CORS_ORIGIN=http://localhost:5173,[http://127.0.0.1:5173](http://127.0.0.1:5173)
+CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
 
 # ... (outras chaves)
 ```
@@ -65,6 +71,7 @@ backend/
     app.js
     server.js
     config/ (env, openai, db)
+    models/ (user.model)
     routes/ (index, chat.routes, feedback.routes, user.routes)
     controllers/ (chat.controller, user.controller)
     services/ (chat.service, guardrails, prompt)
@@ -74,6 +81,9 @@ backend/
 ```
 
 ## Endpoints
+
+### `GET /`
+- **200** → `{ "ok": true, "service": "KinoLens API", "status": "running" }`
 
 ### `GET /health`
 - **200** → `{ "ok": true, "status": "healthy" }`
@@ -88,7 +98,7 @@ backend/
 ```
 
 **Respostas**
-- 201 Created → O usuário foi criado com sucesso.
+- **201 Created** → O usuário foi criado com sucesso.
 ```json
 {
   "message": "Usuário criado com sucesso!",
@@ -98,14 +108,43 @@ backend/
   }
 }
 ```
-- 400 Bad Request → Dados inválidos (e.g., e-mail faltando, senha com menos de 6 caracteres).
+- **400 Bad Request** → Dados inválidos (e.g., e-mail faltando, senha com menos de 6 caracteres).
 ```json
 { "message": "E-mail e uma senha com no mínimo 6 caracteres são obrigatórios." }
 ```
-- 409 Conflict → O e-mail informado já existe no banco de dados.
+- **409 Conflict** → O e-mail informado já existe no banco de dados.
 ```json
 { "message": "Este e-mail já está em uso." }
 ```
+
+### `POST /api/users/login`
+Autentica um usuário existente e retorna um token de acesso.
+
+**Body**
+```json
+{
+  "email": "usuario@exemplo.com",
+  "password": "senhaDoUsuario"
+}
+```
+
+**Respostas**
+- **202 OK** → Login bem-sucedido.
+```json
+{
+  "message": "Login bem-sucedido!",
+  "token": "seu.jwt.token.aqui",
+  "user": {
+    "id": "uuid-do-usuario",
+    "email": "usuario@exemplo.com"
+  }
+}
+```
+- **401 Unauthorized** → Credenciais inválidas (e-mail não encontrado ou senha incorreta).
+```json
+{ "message": "Credenciais inválidas." }
+```
+
 
 ### `POST /api/chat`
 **Body**

@@ -21,7 +21,7 @@ const allowedList = String(env.CORS_ORIGIN || "")
   .map(s => s.trim())
   .filter(Boolean);
 
-  const corsOptions = {
+const corsOptions = {
   origin(origin, cb) {
     // sem Origin (curl, apps nativas) -> permite
     if (!origin) return cb(null, true);
@@ -43,10 +43,12 @@ app.use(express.json({ limit: "1mb" }));
 app.use(httpLogger);
 app.use(limiter);
 
-// rotas
+app.get("/", (_req, res) => {
+  res.json({ ok: true, service: "KinoLens API", status: "running" });
+});
+
 app.use("/", routes);
 
-// handlers finais
 app.use(notFound);
 app.use(errorHandler);
 

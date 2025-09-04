@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
-import { db } from "../config/db.js";
+import jwt from "jsonwebtoken";
 import { UserModel } from '../models/user.model.js';
+import env from "../config/env.js";
 
 export async function register(req, res, next) {
   const { email, password } = req.body;

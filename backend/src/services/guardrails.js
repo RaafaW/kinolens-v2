@@ -1,4 +1,3 @@
-// backend/src/services/guardrails.js
 import { getOpenAI } from "../config/openai.js";
 
 /**
@@ -6,17 +5,21 @@ import { getOpenAI } from "../config/openai.js";
  * Não há deny list.
  */
 const ALLOW_REGEX =
-  /(filme|filmes|cinema|diretor|diretora|director|atriz|ator|elenco|cast|cena|sinopse|roteiro|trilha|soundtrack|gênero|genero|noir|sci-?fi|fic[çc][aã]o cient[ií]fica|terror|drama|com[eé]dia|anima[cç][aã]o|fotografia|cinematografia|montagem|edi[cç][aã]o|franquia|saga|trilogia|prequel|sequel|remake|reboot|oscar|bafta|cannes|sundance|pr[eê]mio|award|longa|curta|document[áa]rio|onde assistir|streaming|netflix|prime video|hbo|mubi|globoplay|disney)/i;
+  /(filme|filmes|cinema|diretor|diretora|director|atriz|ator|elenco|cast|cena|sinopse|roteiro|trilha|soundtrack|g[eê]nero|genero|noir|sci-?fi|fic[çc][aã]o cient[ií]fica|terror|drama|com[eé]dia|anima[cç][aã]o|fotografia|cinematografia|montagem|edi[cç][aã]o|franquia|saga|trilogia|prequel|sequel|remake|reboot|oscar|bafta|cannes|sundance|pr[eê]mio|award|longa|curta|document[áa]rio|onde assistir|streaming|netflix|prime video|hbo|mubi|globoplay|disney)/i;
 
 /**
  * STRONG ALLOW — pedidos explícitos sobre filmes passam sem embeddings.
- * Exemplos: "recomende/indique filmes...", "filmes sobre X", "qual é o filme...".
+ * Exemplos: "recomende/indique filmes...", "filmes sobre X", "qual é o filme...",
+ *           "esqueci o nome de um filme", "me ajude a lembrar um filme".
  */
 const STRONG_ALLOW_REGEX = new RegExp(
   [
     '(recomende|indique|sugira|liste|traga|mostre).*(filme|filmes)',
     '(filme|filmes)\\s+(sobre|que tratem de|sobre o tema|about)\\s+',
-    '(qual\\s+(é|o)\\s+filme|que\\s+filme|identificar\\s+o\\s+filme|descobrir\\s+o\\s+filme)'
+    '(qual\\s+(é|eh|o)\\s+o\\s*filme|que\\s+filme|identificar\\s+o\\s*filme|descobrir\\s+o\\s*filme)',
+    '(esqueci.*(nome)?\\s*de\\s*um\\s*filme)',
+    '(me\\s+(ajuda|ajude).*(lembrar|identificar).*(filme))',
+    '(lembrar\\s+o?\\s*nome\\s+de\\s*um\\s*filme)'
   ].join('|'),
   'i'
 );
@@ -33,7 +36,8 @@ const SEED_TOPICS = [
 ];
 
 const embedModel = process.env.OPENAI_EMBED_MODEL || "text-embedding-3-small";
-const embedThreshold = Number(process.env.EMBED_THRESHOLD || 0.78);
+// threshold mais permissivo por padrão; pode sobrescrever via ENV
+const BASE_THRESHOLD = Number(process.env.EMBED_THRESHOLD || 0.62);
 
 function cosine(a, b) {
   let dot = 0, na = 0, nb = 0;
@@ -83,13 +87,6 @@ async function llmIsCinema(text) {
   return out.includes("cinema");
 }
 
-/**
- * Enforce de escopo:
- * - STRONG_ALLOW libera imediatamente pedidos claros sobre filmes
- * - Caso contrário, requer heurística + similaridade >= threshold
- * - Se falhar e ENABLE_LLM_GUARD=true, tenta classificador LLM
- * Retorna { ok, message?, reason?, sim? }.
- */
 export async function enforceCinemaScope(text) {
   const t = String(text || "").trim();
   if (!t) return { ok: false, message: refusal() };
@@ -102,10 +99,12 @@ export async function enforceCinemaScope(text) {
   // 1) Sinais fracos de cinema
   const allow = ALLOW_REGEX.test(t);
 
-  // 2) Similaridade semântica (tema central precisa ser cinema)
+  // 2) Similaridade semântica (dinâmica para curtas)
+  const dynamicThreshold = t.length < 50 ? Math.min(BASE_THRESHOLD, 0.58) : BASE_THRESHOLD;
+
   let sim = 0;
   try { sim = await similarityToCinema(t); } catch { /* mantém 0 */ }
-  const embedOK = sim >= embedThreshold;
+  const embedOK = sim >= dynamicThreshold;
 
   if (allow && embedOK) return { ok: true, reason: "kw+embed", sim };
 

@@ -42,8 +42,20 @@ export async function register(req, res, next) {
     };
 
     const newUser = await UserModel.create(newUserPayload);
-    return res.status(201).json({ message: "Usuário criado com sucesso!", user: newUser });
 
+    const token = jwt.sign(
+      { userId: newUser.id, email: newUser.email },
+      process.env.JWT_SECRET || env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    delete newUser.password_hash;
+
+    return res.status(201).json({ 
+      message: "Usuário criado com sucesso!", 
+      token,
+      user: newUser 
+    });
   } catch (error) {
     console.error("ERRO DETALHADO AO REGISTRAR USUÁRIO:", error); 
     

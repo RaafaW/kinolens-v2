@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { loginUser, registerUser } from '../services/auth.service';
-import type { LoginCredentials, User } from '../types';
+import type { LoginCredentials, RegisterCredentials, User } from '../types';
 import { AuthContext } from './AuthContext';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -34,7 +34,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (credentials: LoginCredentials) => {
+  const register = async (credentials: RegisterCredentials) => {
     setIsLoading(true);
     try {
       const data = await registerUser(credentials);

@@ -1,8 +1,11 @@
 import { motion } from "framer-motion";
 import { Film, Mail, Lock, Eye, EyeOff, UserPlus, LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom"; // 1. Importe o useNavigate
 import { useLogin } from "../../hooks/useLogin";
 
 export default function Login() {
+  const navigate = useNavigate(); // 2. Inicialize o hook de navegação
+
   const {
     register,
     handleSubmit,
@@ -12,7 +15,7 @@ export default function Login() {
     apiError,
     isLoading,
     onSubmitLogin,
-    onSubmitRegister,
+    // onSubmitRegister, // 3. Remova a função de registro daqui
   } = useLogin();
 
   return (
@@ -30,6 +33,7 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit(onSubmitLogin)} className="space-y-4">
+            {/* ... campos de email e senha ... */}
             <label className="block">
               <span className="text-sm text-gray-200">E-mail</span>
               <div className="mt-1 relative">
@@ -60,7 +64,8 @@ export default function Login() {
               </div>
               {errors.password && <span className="text-xs text-red-400">{errors.password.message}</span>}
             </label>
-
+            
+            {/* ... resto do form ... */}
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm text-gray-300 select-none">
                 <input type="checkbox" {...register("remember")} className="accent-red-600" />
@@ -77,12 +82,19 @@ export default function Login() {
               <button type="submit" className="btn-cinema w-full inline-flex items-center justify-center gap-2" disabled={isLoading}>
                 <LogIn className="w-5 h-5" /> {isLoading ? 'Processando...' : 'Entrar'}
               </button>
-              <button type="button" onClick={handleSubmit(onSubmitRegister)} className="btn-cinema-outline w-full inline-flex items-center justify-center gap-2" disabled={isLoading}>
-                <UserPlus className="w-5 h-5" /> {isLoading ? 'Processando...' : 'Criar conta'}
+
+              {/* 4. Altere o onClick do botão para navegar */}
+              <button 
+                type="button" 
+                onClick={() => navigate('/register')} 
+                className="btn-cinema-outline w-full inline-flex items-center justify-center gap-2" 
+                disabled={isLoading}>
+                <UserPlus className="w-5 h-5" /> Criar conta
               </button>
             </div>
           </form>
 
+          {/* ... resto do componente ... */}
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-white/10" />
             <span className="text-xs text-white/60">ou</span>

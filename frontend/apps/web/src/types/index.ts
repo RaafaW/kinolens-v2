@@ -103,13 +103,21 @@ export type LoginCredentials = {
   password: string;
 };
 
+export type RegisterCredentials = {
+  fullName: string;
+  cpf: string;
+  birthDate: string;
+  email: string;
+  password: string;
+};
+
 export interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
-  register: (credentials: LoginCredentials) => Promise<void>;
+  register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
 }
 

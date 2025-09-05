@@ -12,7 +12,7 @@ export function useLogin() {
   const [showPass, setShowPass] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const { login, register: registerUser, isLoading } = useAuth();
+  const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const onSubmitLogin = async (data: FormVals) => {
@@ -22,16 +22,6 @@ export function useLogin() {
       navigate("/chat");
     } catch (error: any) {
       setApiError(error.message || "Ocorreu um erro. Tente novamente.");
-    }
-  };
-  
-  const onSubmitRegister = async (data: FormVals) => {
-    setApiError(null);
-    try {
-      await registerUser({ email: data.email, password: data.password });
-      alert("Conta criada com sucesso! Agora você pode fazer o login.");
-    } catch (error: any) {
-      setApiError(error.message || "Ocorreu um erro ao criar a conta.");
     }
   };
 
@@ -44,6 +34,5 @@ export function useLogin() {
     apiError,
     isLoading,
     onSubmitLogin,
-    onSubmitRegister,
   };
 }

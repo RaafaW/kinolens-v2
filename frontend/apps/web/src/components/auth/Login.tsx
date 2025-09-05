@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
 import { Film, Mail, Lock, Eye, EyeOff, UserPlus, LogIn } from "lucide-react";
-import { useNavigate } from "react-router-dom"; // 1. Importe o useNavigate
+import { useNavigate } from "react-router-dom";
 import { useLogin } from "../../hooks/useLogin";
+import { Button } from "../ui/Button"; // 1. Importe o componente Button
 
 export default function Login() {
-  const navigate = useNavigate(); // 2. Inicialize o hook de navegação
+  const navigate = useNavigate();
 
   const {
     register,
@@ -15,7 +16,6 @@ export default function Login() {
     apiError,
     isLoading,
     onSubmitLogin,
-    // onSubmitRegister, // 3. Remova a função de registro daqui
   } = useLogin();
 
   return (
@@ -33,7 +33,6 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit(onSubmitLogin)} className="space-y-4">
-            {/* ... campos de email e senha ... */}
             <label className="block">
               <span className="text-sm text-gray-200">E-mail</span>
               <div className="mt-1 relative">
@@ -47,7 +46,6 @@ export default function Login() {
               </div>
               {errors.email && <span className="text-xs text-red-400">{errors.email.message}</span>}
             </label>
-
             <label className="block">
               <span className="text-sm text-gray-200">Senha</span>
               <div className="mt-1 relative">
@@ -64,8 +62,6 @@ export default function Login() {
               </div>
               {errors.password && <span className="text-xs text-red-400">{errors.password.message}</span>}
             </label>
-            
-            {/* ... resto do form ... */}
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm text-gray-300 select-none">
                 <input type="checkbox" {...register("remember")} className="accent-red-600" />
@@ -73,28 +69,27 @@ export default function Login() {
               </label>
               <button type="button" className="text-sm text-red-400 hover:text-red-300 underline underline-offset-4">Esqueci minha senha</button>
             </div>
-
-            {apiError && (
-              <p className="text-sm text-red-400 text-center py-2">{apiError}</p>
-            )}
+            {apiError && (<p className="text-sm text-red-400 text-center py-2">{apiError}</p>)}
 
             <div className="space-y-3 pt-2">
-              <button type="submit" className="btn-cinema w-full inline-flex items-center justify-center gap-2" disabled={isLoading}>
-                <LogIn className="w-5 h-5" /> {isLoading ? 'Processando...' : 'Entrar'}
-              </button>
+              <Button type="submit" variant="primary" className="w-full" disabled={isLoading}>
+                <LogIn className="w-5 h-5" />
+                {isLoading ? 'Processando...' : 'Entrar'}
+              </Button>
 
-              {/* 4. Altere o onClick do botão para navegar */}
-              <button 
-                type="button" 
-                onClick={() => navigate('/register')} 
-                className="btn-cinema-outline w-full inline-flex items-center justify-center gap-2" 
-                disabled={isLoading}>
-                <UserPlus className="w-5 h-5" /> Criar conta
-              </button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate('/register')}
+                disabled={isLoading}
+              >
+                <UserPlus className="w-5 h-5" />
+                Criar conta
+              </Button>
             </div>
           </form>
 
-          {/* ... resto do componente ... */}
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-white/10" />
             <span className="text-xs text-white/60">ou</span>
@@ -102,9 +97,9 @@ export default function Login() {
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-            <button type="button" className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/15 rounded-lg py-2 transition">
+            <Button type="button" variant="secondary" className="w-full">
               Continuar com Google
-            </button>
+            </Button>
           </div>
         </div>
 

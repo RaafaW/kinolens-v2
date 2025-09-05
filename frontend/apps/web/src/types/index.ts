@@ -1,3 +1,5 @@
+import type { Path, UseFormRegister, FieldErrors } from 'react-hook-form';
+
 // Chat Types
 export type Role = 'user' | 'assistant' | 'system';
 
@@ -15,49 +17,16 @@ export interface ChatMessage {
   tokens?: number;
 }
 
-export interface ChatSession {
-  id: string;
-  messages: ChatMessage[];
-  createdAt: Date;
-  updatedAt: Date;
-  title?: string;
-  totalTokens?: number;
+export interface ChatMessageProps {
+  message: ChatMessage;
+  onFeedback: (messageId: string, feedback: 'positive' | 'negative') => void;
 }
 
-// OpenAI API Types
-export interface OpenAIMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-export interface OpenAIRequest {
-  model: string;
-  messages: OpenAIMessage[];
-  max_tokens?: number;
-  temperature?: number;
-  top_p?: number;
-  frequency_penalty?: number;
-  presence_penalty?: number;
-}
-
-export interface OpenAIResponse {
-  id: string;
-  object: string;
-  created: number;
-  model: string;
-  choices: Array<{
-    index: number;
-    message: {
-      role: string;
-      content: string;
-    };
-    finish_reason: string;
-  }>;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+export interface ChatInputProps {
+  inputValue: string;
+  onInputChange: (value: string) => void;
+  onSendMessage: () => void;
+  isLoading: boolean;
 }
 
 // API Types
@@ -137,14 +106,11 @@ export interface TokenUsage {
 }
 
 // Component Props Types
-export interface ButtonProps {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
-  onClick?: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
-  disabled?: boolean;
   loading?: boolean;
-  className?: string;
 }
 
 export interface InputProps {
@@ -197,4 +163,15 @@ export interface CinemaContext {
     dislikedGenres: string[];
     favoriteDirectors: string[];
   };
+}
+
+export interface FormFieldProps {
+  name: Path<RegisterCredentials>;
+  label: string;
+  type?: string;
+  placeholder?: string;
+  icon: React.ElementType;
+  register: UseFormRegister<RegisterCredentials>;
+  errors: FieldErrors<RegisterCredentials>;
+  validation?: object;
 }

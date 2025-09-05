@@ -10,6 +10,11 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
 
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
+
 app.set("trust proxy", 1);
 
 app.use(helmet({

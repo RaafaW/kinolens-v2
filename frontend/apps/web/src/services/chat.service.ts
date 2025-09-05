@@ -1,14 +1,5 @@
-export type Role = 'user' | 'assistant' | 'system';
-
-export interface HistoryItem { role: Role; content: string; }
-export interface ChatRequest { message: string; history?: HistoryItem[]; language?: 'pt' | 'en'; }
-export interface ChatResponse {
-  ok: boolean;
-  reply: string;
-  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; };
-}
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from './apiClient';
+import type { ChatRequest, ChatResponse } from '../types';
 
 export async function sendChat(req: ChatRequest): Promise<ChatResponse> {
   const res = await fetch(`${API_URL}/api/chat`, {

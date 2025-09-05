@@ -1,4 +1,11 @@
 // Chat Types
+export type Role = 'user' | 'assistant' | 'system';
+
+export interface HistoryItem {
+  role: Role;
+  content: string;
+}
+
 export interface ChatMessage {
   id: string;
   content: string;
@@ -56,21 +63,54 @@ export interface OpenAIResponse {
 // API Types
 export interface ChatRequest {
   message: string;
+  history?: HistoryItem[];
+  language?: 'pt' | 'en';
   sessionId?: string;
   context?: string;
 }
-
 export interface ChatResponse {
-  message: string;
-  sessionId: string;
-  tokens: number;
-  model: string;
+  ok: boolean;
+  reply: string;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+  sessionId?: string;
 }
 
 export interface FeedbackRequest {
   messageId: string;
   feedback: 'positive' | 'negative';
   comment?: string;
+}
+
+// User & Auth Types
+export interface User {
+  id: string;
+  email: string;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  message: string;
+  token: string;
+  user: User;
+}
+
+export type LoginCredentials = {
+  email: string;
+  password: string;
+};
+
+export interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => void;
 }
 
 // Analytics Types

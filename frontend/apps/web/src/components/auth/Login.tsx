@@ -1,16 +1,19 @@
-import React from "react";
-import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Film, Mail, Lock, Eye, EyeOff, UserPlus, LogIn } from "lucide-react";
-
-type FormVals = { email: string; password: string; remember: boolean };
+import { useLogin } from "../../hooks/useLogin";
 
 export default function Login() {
-  const { register, handleSubmit, formState: { errors } } =
-    useForm<FormVals>({ defaultValues: { remember: true } });
-  const [showPass, setShowPass] = React.useState(false);
-
-  const onSubmit = (_: FormVals) => {}; // placeholder
+  const {
+    register,
+    handleSubmit,
+    errors,
+    showPass,
+    setShowPass,
+    apiError,
+    isLoading,
+    onSubmitLogin,
+    onSubmitRegister,
+  } = useLogin();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 flex items-center justify-center px-4">
@@ -26,7 +29,7 @@ export default function Login() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmitLogin)} className="space-y-4">
             <label className="block">
               <span className="text-sm text-gray-200">E-mail</span>
               <div className="mt-1 relative">
@@ -66,12 +69,16 @@ export default function Login() {
               <button type="button" className="text-sm text-red-400 hover:text-red-300 underline underline-offset-4">Esqueci minha senha</button>
             </div>
 
+            {apiError && (
+              <p className="text-sm text-red-400 text-center py-2">{apiError}</p>
+            )}
+
             <div className="space-y-3 pt-2">
-              <button type="submit" className="btn-cinema w-full inline-flex items-center justify-center gap-2">
-                <LogIn className="w-5 h-5" /> Entrar
+              <button type="submit" className="btn-cinema w-full inline-flex items-center justify-center gap-2" disabled={isLoading}>
+                <LogIn className="w-5 h-5" /> {isLoading ? 'Processando...' : 'Entrar'}
               </button>
-              <button type="button" className="btn-cinema-outline w-full inline-flex items-center justify-center gap-2">
-                <UserPlus className="w-5 h-5" /> Criar conta
+              <button type="button" onClick={handleSubmit(onSubmitRegister)} className="btn-cinema-outline w-full inline-flex items-center justify-center gap-2" disabled={isLoading}>
+                <UserPlus className="w-5 h-5" /> {isLoading ? 'Processando...' : 'Criar conta'}
               </button>
             </div>
           </form>

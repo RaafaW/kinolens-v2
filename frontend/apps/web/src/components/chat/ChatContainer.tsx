@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, ThumbsUp, ThumbsDown, Loader2 } from 'lucide-react';
-import { sendChat, sendFeedback as sendFeedbackApi, type HistoryItem, type Role } from "../../services/api";
+import { sendChat, sendFeedback as sendFeedbackApi } from "@/services/chat.service"
+import type { HistoryItem, Role } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import gfm from 'remark-gfm';
 
